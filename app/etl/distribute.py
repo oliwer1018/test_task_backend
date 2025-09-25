@@ -26,24 +26,29 @@ UPSERT_DISTRIBUTED = text(
 
 
 # ---- Largest Remainder for integers ----
-def distribute_integer(total: int, weights: List[float]) -> List[int]:
-    if total is None:
-        total = 0
-    if total <= 0 or not weights:
-        return [0 for _ in weights]
-    norm = [max(0.0, float(w)) for w in weights]
-    s = sum(norm)
-    if s == 0:
-        return [0 for _ in weights]
-    norm = [w / s for w in norm]
-    floors = [int(total * w) for w in norm]
-    remainder = int(total - sum(floors))
+def distribute_integer(total, weights):
+    # 1. Start by taking the floor of each share
+    distributed = [int(total * w) for w in weights]
+
+    # 2. Calculate how many units are left undistributed
+    remainder = total - sum(distributed)
+
     if remainder > 0:
-        fracs = [((total * w) - int(total * w)) for w in norm]
-        order = sorted(range(len(norm)), key=lambda i: fracs[i], reverse=True)
-        for i in order[:remainder]:
-            floors[i] += 1
-    return floors
+        # 3. Find the fractional part of each share
+        fractions = [(total * w) % 1 for w in weights]
+
+        # 4. Sort indices of weights by largest fractional remainder
+        indices = sorted(
+            range(len(weights)),
+            key=lambda i: fractions[i],
+            reverse=True
+        )
+
+        # 5. Give the leftover units to the biggest remainders
+        for i in indices[:remainder]:
+            distributed[i] += 1
+
+    return distributed
 
 
 # ---- Largest Remainder for cents (two decimals) ----
@@ -101,10 +106,10 @@ def run_distribution(feeds: pd.DataFrame) -> None:
 
             weights = [c / total_clicks for c in clicks]
 
-            total_searches = int(feed.get("searches", 0) or 0)
+            total_searches = int(feed.get("total_searches", 0) or 0)
             monetized_searches = int(feed.get("monetized_searches", 0) or 0)
             paid_clicks = int(feed.get("paid_clicks", 0) or 0)
-            revenue_total = float(feed.get("revenue", 0.0) or 0.0) * 0.75  # 75% publisher share
+            revenue_total = float(feed.get("feed_revenue", 0.0) or 0.0) * 0.75  # 75% publisher share
 
             dist_searches = distribute_integer(total_searches, weights)
             dist_msearches = distribute_integer(monetized_searches, weights)
