@@ -46,10 +46,7 @@ def pubstats(ts: int = Query(...), from_: str = Query(alias="from"), to: str = Q
     with engine.begin() as conn:
         rows = conn.execute(text(
             """
-            SELECT date, campaign_id, campaign_name,
-                   total_searches, monetized_searches, paid_clicks,
-                   ROUND(pub_revenue, 2) AS revenue,
-                   fp_feed_id AS feed_id
+            SELECT date, campaign_id, campaign_name, total_searches, monetized_searches, paid_clicks, ROUND(pub_revenue, 2) AS revenue, fp_feed_id AS feed_id
             FROM distributed_stats
             WHERE traffic_source_id = :ts
               AND date >= :dfrom AND date <= :dto
